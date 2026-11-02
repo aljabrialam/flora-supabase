@@ -45,10 +45,14 @@ create policy "upload photos" on storage.objects for insert to anon
 <meta name="description" content="Make a 3D bouquet, write a card, add stickers and a photo, and send it as one short link. It opens as a sealed envelope and blooms on their screen.">
 <meta name="theme-color" content="#4a54a6">
 <meta property="og:type" content="website">
-<meta property="og:title" content="fLora · Send flowers that bloom">
-<meta property="og:description" content="3D bouquets, a card in your own words and stickers, sent as one link. Free, no app, no sign-up.">
-<meta property="og:url" content="https://sendflora.vercel.app/">
-<meta property="og:image" content="https://sendflora.vercel.app/og.png">
+<meta property="og:title" content="fLora · Send Deepavali flowers that bloom">
+<meta name="twitter:title" content="fLora · Send Deepavali flowers that bloom">
+<meta property="og:description" content="Make a 3D Deepavali bouquet, write a card with a little help from Claude, add a photo and send it as one short link. Free, no app, no sign-up.">
+<meta name="twitter:description" content="Make a 3D Deepavali bouquet, write a card with a little help from Claude, add a photo and send it as one short link.">
+<meta property="og:url" content="https://flora-supabase.vercel.app/">
+<meta property="og:image" content="https://flora-supabase.vercel.app/og.png">
+<meta property="og:image:alt" content="fLora: a 3D Deepavali bouquet of marigolds on a festive card">
+<meta name="twitter:image" content="https://flora-supabase.vercel.app/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
@@ -2057,6 +2061,7 @@ async function loadCard(id) {
   return { st: cleanState(row.data), photoUrl: pp ? sb.storage.from('card-photos').getPublicUrl(pp).data.publicUrl : null };
 }
 async function openShared(id) {
+  if (!recv) { applyOccasion(presetFor(new Date())); S.to = S.from = S.msg = ''; }
   enterReceive();
   const kick = $('#sealKicker'), btn = $('#btnOpen');
   btn.disabled = true; kick.textContent = 'Fetching your flowers…';
