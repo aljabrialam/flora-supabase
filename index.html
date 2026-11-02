@@ -882,11 +882,9 @@ const OCC = [
     st: [['letter', .13, .14, 1, -8], ['t-hug', .78, .61, .85, -4]] }
 ];
 /* How the occasion list is grouped */
+// Deepavali edition: only this occasion is offered. The others stay defined so older links still open.
 const OCC_GROUPS = [
-  ['Remember', ['allsouls']],
-  ['Celebrate', ['birthday', 'anniversary', 'graduation', 'mothers', 'valentines']],
-  ['Faith and culture', ['raya', 'haji', 'pasko', 'deepavali', 'cny', 'vesak']],
-  ['Feelings', ['thanks', 'getwell', 'sorry', 'kaya', 'missyou', 'justbecause']]
+  ['Festival of lights', ['deepavali']]
 ];
 /* One writing tip per occasion, shown under the message box */
 const TIPS = {
@@ -1027,6 +1025,7 @@ const MAX_STEMS = 11;
 const mixTotal = () => S.mix.reduce((t, m) => t + m[2], 0);
 
 function presetFor(date) {
+  return 'deepavali';
   const m = date.getMonth() + 1, d = date.getDate();
   if ((m === 10 && d >= 20) || (m === 11 && d <= 10)) return 'deepavali';
   if (m === 10 && d >= 15) return 'allsouls';
@@ -1910,7 +1909,7 @@ window.addEventListener('hashchange', async () => {
 /* ---------------- Tutorial with Bloomie, the blossom mascot ---------------- */
 const TOUR = [
   { t: 'Hi! I’m <b>Bloomie</b>, your little flower guide. Let me show you how to send flowers that bloom on their screen. It takes six short steps.' },
-  { el: '#occGrid', pane: 'occasion', t: '<b>Pick the occasion.</b> Undas, birthdays, Pasko and more. It sets the flowers, colours, a starter message and stickers.' },
+  { el: '#occGrid', pane: 'occasion', t: '<b>This is your Deepavali card.</b> It sets marigolds, festive colours, a starter message and diya stickers. You can change all of it.' },
   { el: '#btnSurprise', t: 'Can’t decide? Tap <b>Surprise me</b> for a fresh design that suits the occasion. Tap again for another one.' },
   { el: '#flowerList', pane: 'flowers', t: '<b>Choose a flower.</b> Each picture shows exactly how it looks, with a note on what it means.' },
   { el: '#card', t: 'This is your card. <b>Drag the bouquet</b> to turn it around and see it from every side.' },
@@ -2186,7 +2185,7 @@ async function boot() {
   if (cid !== null) { openShared(cid); return; }
   const st = await decodeState((location.hash || '').slice(1));
   if (st) { Object.assign(S, st); syncControls(); enterReceive(); return; }
-  if (!load()) applyOccasion(presetFor(new Date()));
+  if (!load() || !OCC_GROUPS.some(([, ids]) => ids.includes(S.occ))) applyOccasion(presetFor(new Date()));
   syncCard(); syncControls(); renderStickers();
   if (GL) { buildBouquet(); setBloom(0); playBloom(0, REDUCED ? .01 : 3.2); }
   let seen = false; try { seen = !!localStorage.getItem('flora.tour.v1'); } catch (e) {}
