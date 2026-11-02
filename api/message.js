@@ -31,10 +31,15 @@ function limited(ip) {
   if (hits.size > 5000) hits.clear();
   return list.length > RATE.max;
 }
+// Card messages only: anything that looks like a request for another task, code, or prompt tricks is refused before Claude sees it.
+const OFF_TOPIC = /\b(ignore|disregard|forget|override|bypass|jailbreak|pretend|roleplay|act as|you are now|system prompt|instructions?|prompt|developer mode|dan)\b|\b(code|script|python|javascript|sql|html|function|program|essay|homework|summari[sz]e|translate|explain|recipe|password|api key|hack|exploit)\b|https?:|www\.|[{}<>`$\\]/i;
+const isOffTopic = (...fields) => fields.some(f => f && OFF_TOPIC.test(f));
 function safeOutput(text) {
   let t = String(text || '').replace(/^["“'\s]+|["”'\s]+$/g, '').replace(/\s+/g, ' ').trim();
-  if (!t || t === 'REFUSE') return null;
-  if (/https?:|www\.|@|\d{6,}|<|>|\*\*|#/i.test(t)) return null;
+  if (!t || /REFUSE/.test(t)) return null;
+  if (/https?:|www\.|@|\d{6,}|<|>|\*\*|#|[{}`$\\;=]|```/i.test(t)) return null;
+  if (/\b(as an ai|language model|i can(?:'|’)t|i cannot|i'm sorry, but|system prompt|instructions)\b/i.test(t)) return null;
+  if (t.split(' ').length < 4) return null;
   if (t.length > MAX_CHARS) { const cut = t.slice(0, MAX_CHARS); const end = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('! ')); t = end > 60 ? cut.slice(0, end + 1) : cut.replace(/\s+\S*$/, '') + '…'; }
   return t;
 }
@@ -50,6 +55,7 @@ export async function POST(request) {
   const occasion = OCCASIONS[body && body.occasion] ? body.occasion : 'justbecause';
   const tone = TONES[body && body.tone] ? body.tone : 'warm';
   const to = clean(body.to, 28), from = clean(body.from, 28), draft = clean(body.draft, MAX_CHARS);
+  if (isOffTopic(body.to, body.from, body.draft)) return json({ error: 'The writer only helps with card messages.' }, 422);
 
   const system = [
     'You write the message on a digital flower card. That is your only job.',
@@ -68,10 +74,11 @@ export async function POST(request) {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST', signal: ctrl.signal,
       headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 120, temperature: 0.9, system, messages: [{ role: 'user', content: user }] })
+      body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 90, temperature: 0.9, system, messages: [{ role: 'user', content: user }] })
     });
     if (!r.ok) { console.error('anthropic', r.status, (await r.text()).slice(0, 300)); return json({ error: 'The message writer is busy. Try again in a moment.' }, 502); }
     const data = await r.json();
+    if (data.stop_reason !== 'end_turn') return json({ error: 'Couldn’t write that one. Try again, or write your own.' }, 422);
     const msg = safeOutput((data.content || []).filter(c => c.type === 'text').map(c => c.text).join(' '));
     if (!msg) return json({ error: 'Couldn’t write that one. Try again, or write your own.' }, 422);
     return json({ message: msg });
