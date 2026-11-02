@@ -564,8 +564,8 @@ body:not(.receive) .recv-only{display:none!important}
 <script type="module">
 // Supabase project (Settings → API). The anon key is public by design; row level security guards the data.
 // Never put the service-role key here.
-const SUPABASE_URL = '';
-const SUPABASE_ANON_KEY = '';
+const SUPABASE_URL = 'https://nhigdyavjspodjveeycz.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oaWdkeWF2anNwb2RqdmVleWN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM2MTU5NzgsImV4cCI6MjEwOTE5MTk3OH0.KEQkly6KkHRPSRB5KkCXPNsPKGSq5wK8o6kY9_2CeoQ';
 // Engine: three.js r167 · pmndrs/postprocessing (bloom, tone mapping, vignette, SMAA) · N8AO (ambient occlusion)
 let THREE = null, RoomEnvironment = null, PP = null, N8AOPostPass = null;
 try { THREE = await import('three'); ({ RoomEnvironment } = await import('three/addons/environments/RoomEnvironment.js')); } catch (e) { console.warn('3D engine failed to load', e); }
