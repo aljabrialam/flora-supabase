@@ -2,6 +2,8 @@
 
 Send flowers that bloom. Build a 3D bouquet, write a card, add stickers and a photo, and send it as one short link. The recipient opens a sealed envelope and the bouquet blooms on their screen.
 
+Made by [Aljabri Alam](https://www.linkedin.com/in/aljabri-alam/).
+
 ## Features
 
 - **Short links**: "Send flowers" saves the card to Supabase and gives `/?c=<id>` (10-char random base32 from `crypto.getRandomValues`). If Supabase can't be reached, it falls back to the original `#g…` link, which carries the whole card in the hash.
