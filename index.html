@@ -336,7 +336,9 @@ body:not(.receive) .recv-only{display:none!important}
 .surprise svg{width:34px;height:34px;flex:none;padding:6px;border-radius:10px;background:rgba(255,255,255,.9);color:var(--btn-ink)}
 .surprise b{display:block;font-size:16px}.surprise small{display:block;font-size:13px;color:var(--fg-2)}
 .surprise:active svg{transform:rotate(90deg);transition:transform .25s}
-.flabel{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.flabel{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.flabel label{margin-right:auto}
+.idea.busy{opacity:.7;pointer-events:none}
 .idea{display:inline-flex;align-items:center;gap:5px;border:0;background:rgba(255,255,255,.16);color:#fff;border-radius:999px;padding:4px 10px 4px 7px;font-size:12px;font-weight:600}
 .idea svg{width:14px;height:14px}
 .icon-btn{width:40px;height:40px;padding:0;border-radius:50%}
@@ -458,7 +460,7 @@ body:not(.receive) .recv-only{display:none!important}
           <div class="box">
             <div class="field"><div class="flabel"><label for="inHead">Heading</label><button type="button" class="idea" id="btnHeadIdea"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor"/></svg>New heading</button></div><input id="inHead" maxlength="34" autocomplete="off"></div>
             <div class="field"><label for="inTo">For</label><input id="inTo" maxlength="28" autocomplete="off"></div>
-            <div class="field"><div class="flabel"><label for="inMsg">Message</label><button type="button" class="idea" id="btnMsgIdea"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor"/></svg>New message</button></div><textarea id="inMsg" maxlength="160" rows="3"></textarea><p class="tip" id="msgTip"></p><div class="count" id="msgCount">0/160</div></div>
+            <div class="field"><div class="flabel"><label for="inMsg">Message</label><button type="button" class="idea" id="btnMsgIdea"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor"/></svg>New message</button><button type="button" class="idea" id="btnMsgAI" title="Claude writes a message for this occasion">Write with Claude</button></div><textarea id="inMsg" maxlength="160" rows="3"></textarea><p class="tip" id="msgTip"></p><div class="count" id="msgCount">0/160</div></div>
             <div class="field"><label for="inFrom">From</label><input id="inFrom" maxlength="28" autocomplete="off"></div>
           </div>
         </div>
@@ -1000,6 +1002,18 @@ function surprise() {
   layer.querySelectorAll('.sticker-inner').forEach((el, i) => anim(el, { scale: [.3, 1], opacity: [0, 1] }, { duration: .55, delay: .15 + i * .1, spring: true }));
 }
 function newMessage() { const p = POOLS[S.occ] || POOLS.justbecause; S.msg = pickNot(p.msgs, S.msg); syncCard(); syncControls(); save(); anim($('#cMsg'), { opacity: [0, 1], y: [6, 0] }, { duration: .4 }); }
+async function aiMessage(btn) {
+  if (btn.classList.contains('busy')) return;
+  btn.classList.add('busy'); btn.disabled = true; const label = btn.textContent; btn.textContent = 'Writing…';
+  try {
+    const r = await fetch('/api/message', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ occasion: S.occ, to: S.to, from: S.from, draft: S.msg, tone: 'warm' }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.message) throw new Error(j.error || 'The message writer is busy.');
+    S.msg = String(j.message).slice(0, 160); syncCard(); syncControls(); save(); anim($('#cMsg'), { opacity: [0, 1], y: [6, 0] }, { duration: .4 });
+    track('AI message', { occasion: S.occ });
+  } catch (e) { toast((e.message || 'The message writer is busy.') + ' Here’s an idea instead.'); newMessage(); }
+  btn.classList.remove('busy'); btn.disabled = false; btn.textContent = label;
+}
 function newHeading() { const p = POOLS[S.occ] || POOLS.justbecause; S.h = pickNot(p.heads, S.h); syncCard(); syncControls(); save(); }
 const OCC_IDS = OCC.map(o => o.id);
 const STEMS = [1, 3, 5, 7, 9];
@@ -1014,7 +1028,8 @@ const mixTotal = () => S.mix.reduce((t, m) => t + m[2], 0);
 
 function presetFor(date) {
   const m = date.getMonth() + 1, d = date.getDate();
-  if ((m === 10 && d >= 15) || (m === 11 && d <= 3)) return 'allsouls';
+  if ((m === 10 && d >= 20) || (m === 11 && d <= 10)) return 'deepavali';
+  if (m === 10 && d >= 15) return 'allsouls';
   if (m === 2 && d <= 15) return 'valentines';
   if (m === 5) return 'mothers';
   return 'justbecause';
@@ -1654,6 +1669,7 @@ function bindControls() {
     else if (ds.stk) { addSticker(ds.stk); }
     else if (b.id === 'btnSurprise') { surprise(); track('Surprise me', { occasion: S.occ }); return; }
     else if (b.id === 'btnMsgIdea') { newMessage(); return; }
+    else if (b.id === 'btnMsgAI') { aiMessage(b); return; }
     else if (b.id === 'btnHeadIdea') { newHeading(); return; }
     else if (b.id === 'btnShuffle') { S.seed = (S.seed * 31 + 7) % 9973; rebuild(.4); }
     else if (b.id === 'btnClearStk') { S.stickers = []; sel = -1; renderStickers(); }
